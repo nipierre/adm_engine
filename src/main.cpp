@@ -12,9 +12,11 @@
 #include "ear/ear.hpp"
 #include "ear/dsp/dsp.hpp"
 
-using namespace ear;
+#include "parser.hpp"
+#include "renderer.hpp"
 
-const unsigned int BLOCK_SIZE = 4096; // in frames
+using namespace ear;
+using namespace adm;
 
 int main(int argc, char **argv) {
 
@@ -25,167 +27,84 @@ int main(int argc, char **argv) {
   }
 
   auto bw64File = bw64::readFile(argv[1]);
+  auto admDocument = parseAdmXml(bw64File);
 
-  // BWF64 file infos
-  std::cout << std::endl << "### BWF64 file infos:" << std::endl;
-  std::cout << "Format:" << std::endl;
-  std::cout << " - formatTag: " << bw64File->formatTag() << std::endl;
-  std::cout << " - channels: " << bw64File->channels() << std::endl;
-  std::cout << " - sampleRate: " << bw64File->sampleRate() << std::endl;
-  std::cout << " - bitDepth: " << bw64File->bitDepth() << std::endl;
-  std::cout << " - numerOfFrames: " << bw64File->numberOfFrames() << std::endl;
+  const std::string outputLayout = "0+2+0"; // defined into libear/resources/2051_layouts.yaml
+  const Layout layout = getLayout(outputLayout);
+  const bool directRendering = true;
 
-  std::cout << "chunkIds:" << std::endl;
-  for (auto& chunk : bw64File->chunks()) {
-    std::cout << " - " << '\'' << bw64::utils::fourCCToStr(chunk.id) << '\''
-              << std::endl;
-  }
-
-  if (bw64File->hasChunk(bw64::utils::fourCC("chna"))) {
-    if (auto chnaChunk = bw64File->chnaChunk()) {
-      std::cout << "ChnaChunk:" << std::endl;
-      std::cout << " - numTracks: " << chnaChunk->numTracks() << std::endl;
-      std::cout << " - numUids: " << chnaChunk->numUids() << std::endl;
-      std::cout << " - audioIds:" << std::endl;
-      for (auto audioId : chnaChunk->audioIds()) {
-        std::cout << "   - ";
-        std::cout << audioId.trackIndex() << ", " << audioId.uid() << ", "
-                  << audioId.trackRef() << ", " << audioId.packRef()
-                  << std::endl;
-      }
+  // Extract info: which audio channels to mix to get which programme
+  auto programmes = admDocument->getElements<AudioProgramme>();
+  for (int i = 0; i < programmes.size(); ++i)
+  {
+    // parse audio programmes to get audio contents
+    auto audioProgramme = programmes[i];
+    std::cout << "AudioProgramme: " << audioProgramme->get<AudioProgrammeId>().get<AudioProgrammeIdValue>() << ": "
+                                    << audioProgramme->get<AudioProgrammeName>();
+    if(audioProgramme->has<AudioProgrammeLanguage>()) {
+      std::cout << "(" << audioProgramme->get<AudioProgrammeLanguage>() << ")";
     }
-  }
+    std::cout << std::endl;
 
-  // Extract ADM XML from BWF64
-  std::cout << std::endl << "### Extract ADM XML from BWF64:" << std::endl;
-  std::stringstream axmlStringstream;
-  if (bw64File->axmlChunk()) {
-    bw64File->axmlChunk()->write(axmlStringstream);
-    std::cout << axmlStringstream.str();
-  } else {
-    std::cerr << "could not find an axml chunk";
-    exit(1);
-  }
+    std::string programmeTitle = audioProgramme->get<AudioProgrammeName>().get();
+    std::vector<AudioObjectRenderer> renderers;
 
-  // Read file ADM composition
-  std::cout << std::endl << "### Read ADM composition:" << std::endl;
-  auto admDocument = adm::parseXml(axmlStringstream);
+    auto contents = audioProgramme->getReferences<AudioContent>();
+    for (int i = 0; i < contents.size(); ++i)
+    {
+      // parse audio content to get audio objects
+      auto audioContent = contents[i];
+      std::cout << "\tAudioContent: " << audioContent->get<AudioContentId>().get<AudioContentIdValue>() << ": "
+                                    << audioContent->get<AudioContentName>();
+      if(audioContent->has<AudioContentLanguage>()) {
+        std::cout << "(" << audioContent->get<AudioContentLanguage>() << ")";
+      }
+      std::cout << std::endl;
 
-  // write XML data to stdout
-  std::stringstream xmlStream;
-  writeXml(xmlStream, admDocument);
-  std::cout << xmlStream.str();
+      auto objects = audioContent->getReferences<AudioObject>();
+      for (int i = 0; i < objects.size(); ++i)
+      {
+        // parse audio objects to get audio packs and tracks
+        auto audioObject = objects[i];
+        std::cout << "\t\tAudioObject: " << audioObject->get<AudioObjectId>().get<AudioObjectIdValue>() << ": "
+                                         << audioObject->get<AudioObjectName>() << std::endl;
 
+        auto audioPackFormatRefs = audioObject->getReferences<AudioPackFormat>();
 
-  // TODO: extract info!
+        std::vector<size_t> trackIds;
+        size_t audioPackFormatId;
+        TypeDescriptor typeDescriptor = TypeDefinition::UNDEFINED;
 
-  // Calculate gains
-  std::cout << std::endl << "### Calculate gains:" << std::endl;
-  // make the gain calculator
-  std::string outputLayout = "0+2+0"; // defined into libear/resources/2051_layouts.yaml
-  Layout layout = getLayout(outputLayout);
-  size_t outputNbChannels = layout.channels().size();
+        // WARNING: we do not support multi-AudioPackFormat reference by object for now!
+        if(audioPackFormatRefs.size()) {
+          auto audioPackFormat = audioPackFormatRefs[0];
+          audioPackFormatId = audioPackFormat->get<AudioPackFormatId>().get<AudioPackFormatIdValue>().get();
+          std::cout << "\t\t\tAudioPackFormat ref: " << audioPackFormat->get<AudioPackFormatId>().get<AudioPackFormatIdValue>() << " ";
+          audioPackFormat->get<AudioPackFormatId>().print(std::cout);
+          std::cout << " => " << audioPackFormat->get<AudioPackFormatName>()
+                    << " " << audioPackFormat->get<TypeDescriptor>() << std::endl;
+          typeDescriptor = audioPackFormat->get<TypeDescriptor>();
+        }
 
-  // calculate gains for direct speakers
-  GainCalculatorDirectSpeakers speakerGainCalculator(layout);
-  DirectSpeakersTypeMetadata speakersMetadata;
-  std::vector<float> gains(outputNbChannels);
-  speakerGainCalculator.calculate(speakersMetadata, gains);
+        auto audioTrackUidRefs = audioObject->getReferences<AudioTrackUid>();
+        for (int i = 0; i < audioTrackUidRefs.size(); ++i) {
+          auto audioTrackUid = audioTrackUidRefs[i];
+          std::cout << "\t\t\tAudioTrackUid ref: " << audioTrackUid->get<AudioTrackUidId>().get<AudioTrackUidIdValue>() << " ";
+          audioTrackUid->get<AudioTrackUidId>().print(std::cout);
+          std::cout << std::endl;
 
-  // calculate gains for objects speakers
-  GainCalculatorObjects objectsGainCalculator(layout);
-  ObjectsTypeMetadata objectsMetadata;
-  // TODO: should we extract position from input ADM?
-  objectsMetadata.position = PolarPosition(0.0f, 0.0f, 1.0f); // center objects
-  std::vector<float> directGains(outputNbChannels);
-  std::vector<float> diffuseGains(outputNbChannels);
-  objectsGainCalculator.calculate(objectsMetadata, directGains, diffuseGains);
+          // TODO: should we compare the AudioTrackUID with the content of the BW64 "chna" chunk to get the channel ID?
 
-  // print the output
-  auto fmt = std::setw(10);
-  std::cout << std::setprecision(4);
+          // Set audio track as input channels
+          trackIds.push_back(audioTrackUid->get<AudioTrackUidId>().get<AudioTrackUidIdValue>().get());
+        }
 
-  std::cout << fmt << "channel"
-            << fmt << "gain"
-            << fmt << "direct"
-            << fmt << "diffuse"  << std::endl;
-  for (size_t i = 0; i < outputNbChannels; i++) {
-    std::cout << fmt << layout.channels()[i].name()
-              << fmt << gains[i]
-              << fmt << directGains[i]
-              << fmt << diffuseGains[i] << std::endl;
-  }
-
-  // Render samples with gains
-  std::cout << std::endl << "### Render samples with gains:" << std::endl;
-
-  // Interpolator
-  dsp::GainInterpolator<dsp::LinearInterpVector> interpolator;
-  size_t nbSamples = bw64File->numberOfFrames();
-  for (int i = 0; i < nbSamples; ++i) {
-    interpolator.interp_points.push_back(std::make_pair(i, gains));
-  }
-
-  // Output file
-  auto outputFile = bw64::writeFile("output_bwf64.wav", outputNbChannels, bw64File->sampleRate(), bw64File->bitDepth());
-
-  // Buffers
-   // FIXME here we read every input channels, meanwhile the interpolation expect one input channel at a time!
-  const size_t inputNbChannels = bw64File->channels();
-  // std::vector<float> fileInputBuffer(BLOCK_SIZE * inputNbChannels);
-  std::vector<float> fileOutputBuffer(BLOCK_SIZE * outputNbChannels);
-
-  float * const in = new float[BLOCK_SIZE * inputNbChannels];
-  // float **in = new float*[inputNbChannels];
-  // for (int i = 0; i < inputNbChannels; ++i) {
-  //   in[i] = new float[BLOCK_SIZE];
-  // }
-
-  float **out = new float*[outputNbChannels];
-  for (int i = 0; i < outputNbChannels; ++i) {
-    out[i] = new float[BLOCK_SIZE];
-  }
-
-  // Process interpolation and write output file
-  dsp::SampleIndex blockStart = 0;
-  while (!bw64File->eof()) {
-    // auto readFrames = bw64File->read(&fileInputBuffer[0], BLOCK_SIZE);
-    auto readFrames = bw64File->read(&in[0], BLOCK_SIZE);
-    std::cout << blockStart << " | Read " << readFrames << " frames";
-
-    // // init input buffer
-    // size_t position = 0;
-    // for (int f = 0; f < readFrames; ++f) {
-    //   for (int c = 0; c < inputNbChannels; ++c) {
-    //     in[c] = &fileInputBuffer.at(position++);
-    //   }
-    // }
-
-    // for (int oc = 0; oc < outputNbChannels; ++oc) {
-    //   for (int ic = 0; ic < inputNbChannels; ++ic) {
-    //     interpolator.process(blockStart, readFrames, &in[ic], &out[oc]);
-    //     std::cout << " | Processed";
-    //   }
-    // }
-    // blockStart++;
-    interpolator.process(blockStart++, readFrames, &in, out);
-
-    for (int f = 0; f < readFrames; ++f) {
-      for (int c = 0; c < outputNbChannels; ++c) {
-        fileOutputBuffer.push_back(out[c][f]);
+        renderers.push_back(AudioObjectRenderer(trackIds, audioPackFormatId, typeDescriptor));
       }
     }
 
-    auto wroteFrames = outputFile->write(&fileOutputBuffer[0], readFrames);
-    std::cout << " | Wrote " << wroteFrames << " frames." << std::endl;
-    fileOutputBuffer.clear();
+    std::cout << "RENDER PROGRAMME:" << std::endl;
+    render(bw64File, layout, programmeTitle, renderers);
   }
-
-  delete in;
-  for(int i = 0; i < outputNbChannels; ++i){
-    delete[] out[i];
-  }
-  delete[] out;
-
   return 0;
 }
