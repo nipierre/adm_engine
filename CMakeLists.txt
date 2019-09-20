@@ -8,3 +8,5 @@ find_package(ear REQUIRED)
 add_executable(adm_audio_renderer src/main.cpp)
 target_link_libraries(adm_audio_renderer PRIVATE ear)
 target_link_libraries(adm_audio_renderer PRIVATE adm)
+
+install(TARGETS adm_audio_renderer DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
