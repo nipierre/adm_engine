@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include "ear/ear.hpp"
 #include "bw64/bw64.hpp"
 #include "adm/adm.hpp"
@@ -11,7 +13,8 @@ public:
     : _trackIds(trackIds)
     , _audioPackFormat(audioPackFormat)
     , _typeDescriptor(typeDescriptor)
-  {}
+  {
+  }
 
   std::vector<size_t> getTrackIds() const {
     return _trackIds;
@@ -23,9 +26,6 @@ public:
 
   adm::TypeDescriptor getTypeDescriptor() const {
     return _typeDescriptor;
-  }
-
-  void render(const float * in, const size_t& nbSamples, const size_t nbInputChannels, float * out) {
   }
 
 private:
@@ -63,12 +63,16 @@ std::vector<float> getDirectSpeakersGains(const ear::Layout& layout, const size_
     std::cout << fmt << layout.channels()[i].name()
               << fmt << gains[i] << std::endl;
   }
+  return gains;
 }
 
 void render(const std::unique_ptr<bw64::Bw64Reader>& bw64File,
             const ear::Layout& layout,
             const std::string programmeTitle,
             const std::vector<AudioObjectRenderer> renderers) {
+
+  const size_t outputNbChannels = layout.channels().size();
+  std::map<size_t, std::vector<size_t>> channelsMapping;
 
   for(AudioObjectRenderer renderer: renderers) {
     std::cout << "\t- Render: " << renderer << std::endl;
@@ -84,9 +88,43 @@ void render(const std::unique_ptr<bw64::Bw64Reader>& bw64File,
         std::cerr << "Unsupported type descriptor: " << adm::formatTypeDefinition(renderer.getTypeDescriptor()) << std::endl;
         exit(1);
     }
+
+    switch(renderer.getAudioPackFormat()) {
+      case 1: // AP_00010001 => urn:itu:bs:775:3:pack:mono_(0+1+0)
+        if(renderer.getTrackIds().size() != 1) {
+          std::cerr << "AudioPackFormat does not fit the number of tracks tracks: " << renderer << std::endl;
+          exit(1);
+        }
+        for (int oc = 0; oc < outputNbChannels; ++oc) {
+          channelsMapping[oc].push_back(renderer.getTrackIds().at(0));
+        }
+        break;
+
+      case 2: // AP_00010002 => urn:itu:bs:2051:0:pack:stereo_(0+2+0)
+        if(renderer.getTrackIds().size() != 2) {
+          std::cerr << "AudioPackFormat does not fit the number of tracks tracks: " << renderer << std::endl;
+          exit(1);
+        }
+        for (int oc = 0; oc < outputNbChannels; ++oc) {
+          channelsMapping[oc].push_back(renderer.getTrackIds().at(oc));
+        }
+        break;
+
+      default:
+        std::cerr << "Unsupported audio pack format: " << renderer.getAudioPackFormat() << std::endl;
+        exit(1);
+    }
   }
 
-  const size_t outputNbChannels = layout.channels().size();
+  std::cout << "CHANNEL MAPPING: " << std::endl;
+  for (const auto& mapping : channelsMapping) {
+    std::cout << "  - Input channels: ";
+    for (auto intputChannel : mapping.second) {
+      std::cout << intputChannel << " ";
+    }
+    std::cout << " ==> output channel: " << mapping.first << std::endl;
+  }
+
   const std::vector<float> gains = getDirectSpeakersGains(layout, outputNbChannels);
 
   // Render samples with gains
@@ -100,37 +138,34 @@ void render(const std::unique_ptr<bw64::Bw64Reader>& bw64File,
   // Buffers
   const size_t inputNbChannels = bw64File->channels();
   std::vector<float> fileInputBuffer(BLOCK_SIZE * inputNbChannels);
-  std::vector<float> fileOutputBuffer(BLOCK_SIZE * outputNbChannels);
+  std::vector<float> fileOutputBuffer;
 
   // Read file, render with gains and write output file
-  ear::dsp::SampleIndex blockStart = 0;
+  size_t filePosition = 0;
   while (!bw64File->eof()) {
     // Read a data block
     auto readFrames = bw64File->read(&fileInputBuffer[0], BLOCK_SIZE);
-    std::cout << blockStart << " | Read " << readFrames << " frames";
-    // std::cout << std::endl;
-
     float* ocsample = new float[outputNbChannels];
-    size_t position = 0;
-    while(position < readFrames) {
-      for (int ic = 0; ic < inputNbChannels; ++ic) {
-        if(position % inputNbChannels == ic) {
-          for (int oc = 0; oc < outputNbChannels; ++oc) {
-            if(position % outputNbChannels == oc) {
-              ocsample[oc] += fileInputBuffer[position] * gains[oc];
-              // std::cout << position << "-> " << ic << " -> " << oc << " : " << ocsample[oc] << std::endl;
-            }
-          }
+    size_t frame = 0;
+    size_t sample = 0;
+
+    while(frame < readFrames) {
+      for (int oc = 0; oc < outputNbChannels; ++oc) {
+        // for each output channel, apply the mapped input channels...
+        ocsample[oc] = 0.0;
+        for(size_t ic : channelsMapping.at(oc)) {
+          ocsample[oc] += fileInputBuffer[sample + ic] * gains[oc];
         }
       }
-      position++;
+      filePosition += inputNbChannels;
+      sample += inputNbChannels;
       for (int oc = 0; oc < outputNbChannels; ++oc) {
         fileOutputBuffer.push_back(ocsample[oc]); // FIXME : double sound in output ?
       }
+      frame++;
     }
 
     auto wroteFrames = outputFile->write(&fileOutputBuffer[0], readFrames);
-    std::cout << " | Wrote " << wroteFrames << " frames." << std::endl;
     fileOutputBuffer.clear();
     delete[] ocsample;
   }

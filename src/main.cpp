@@ -96,7 +96,7 @@ int main(int argc, char **argv) {
           // TODO: should we compare the AudioTrackUID with the content of the BW64 "chna" chunk to get the channel ID?
 
           // Set audio track as input channels
-          trackIds.push_back(audioTrackUid->get<AudioTrackUidId>().get<AudioTrackUidIdValue>().get());
+          trackIds.push_back(audioTrackUid->get<AudioTrackUidId>().get<AudioTrackUidIdValue>().get() - 1);
         }
 
         renderers.push_back(AudioObjectRenderer(trackIds, audioPackFormatId, typeDescriptor));
