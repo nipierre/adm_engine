@@ -4,12 +4,21 @@
 #include "bw64/bw64.hpp"
 #include "adm/adm.hpp"
 
+#if defined(WIN32) || defined(_WIN32)
+#define PATH_SEPARATOR "\\"
+#else
+#define PATH_SEPARATOR "/"
+#endif
+
 const unsigned int BLOCK_SIZE = 4096; // in frames
+
 
 class AudioObjectRenderer {
 
 public:
-  AudioObjectRenderer(const std::vector<size_t>& trackIds, const size_t& audioPackFormat, const adm::TypeDescriptor& typeDescriptor)
+  AudioObjectRenderer(const std::vector<size_t>& trackIds,
+                      const size_t& audioPackFormat,
+                      const adm::TypeDescriptor& typeDescriptor)
     : _trackIds(trackIds)
     , _audioPackFormat(audioPackFormat)
     , _typeDescriptor(typeDescriptor)
@@ -28,11 +37,19 @@ public:
     return _typeDescriptor;
   }
 
+  float getTrackGain(const size_t trackId) const {
+    return _trackGains.at(trackId);
+  }
+
+  void setTrackGain(const size_t trackId, const float gain) {
+    _trackGains[trackId] = gain;
+  }
+
 private:
   const std::vector<size_t> _trackIds;
   const size_t _audioPackFormat;
   const adm::TypeDescriptor _typeDescriptor;
-
+  std::map<size_t, float> _trackGains;
 };
 
 std::ostream& operator<<(std::ostream& os, const AudioObjectRenderer& renderer) {
@@ -47,7 +64,7 @@ std::ostream& operator<<(std::ostream& os, const AudioObjectRenderer& renderer) 
 
 std::vector<float> getDirectSpeakersGains(const ear::Layout& layout, const size_t& outputNbChannels) {
   // calculate gains for direct speakers
-  std::cout << std::endl << "### Calculate gains:" << std::endl;
+  std::cout << "/// GAINS:" << std::endl;
   ear::GainCalculatorDirectSpeakers speakerGainCalculator(layout);
   ear::DirectSpeakersTypeMetadata speakersMetadata;
   std::vector<float> gains(outputNbChannels);
@@ -69,10 +86,12 @@ std::vector<float> getDirectSpeakersGains(const ear::Layout& layout, const size_
 void render(const std::unique_ptr<bw64::Bw64Reader>& bw64File,
             const ear::Layout& layout,
             const std::string programmeTitle,
+            const std::string outputDirectory,
             const std::vector<AudioObjectRenderer> renderers) {
 
   const size_t outputNbChannels = layout.channels().size();
   std::map<size_t, std::vector<size_t>> channelsMapping;
+  std::map<size_t, float> inputChannelGains;
 
   for(AudioObjectRenderer renderer: renderers) {
     std::cout << "\t- Render: " << renderer << std::endl;
@@ -114,9 +133,13 @@ void render(const std::unique_ptr<bw64::Bw64Reader>& bw64File,
         std::cerr << "Unsupported audio pack format: " << renderer.getAudioPackFormat() << std::endl;
         exit(1);
     }
+
+    for(size_t trackId : renderer.getTrackIds()) {
+      inputChannelGains[trackId] = renderer.getTrackGain(trackId);
+    }
   }
 
-  std::cout << "CHANNEL MAPPING: " << std::endl;
+  std::cout << "/// CHANNEL MAPPING: " << std::endl;
   for (const auto& mapping : channelsMapping) {
     std::cout << "  - Input channels: ";
     for (auto intputChannel : mapping.second) {
@@ -128,10 +151,14 @@ void render(const std::unique_ptr<bw64::Bw64Reader>& bw64File,
   const std::vector<float> gains = getDirectSpeakersGains(layout, outputNbChannels);
 
   // Render samples with gains
-  std::cout << std::endl << "### Render samples with gains:" << std::endl;
+  std::cout << "/// RENDERING..." << std::endl;
 
   // Output file
   std::stringstream outputFileName;
+  outputFileName << outputDirectory;
+  if(outputDirectory.back() != std::string(PATH_SEPARATOR).back()) {
+    outputFileName << PATH_SEPARATOR;
+  }
   outputFileName << programmeTitle << ".wav";
   auto outputFile = bw64::writeFile(outputFileName.str(), outputNbChannels, bw64File->sampleRate(), bw64File->bitDepth());
 
@@ -154,7 +181,7 @@ void render(const std::unique_ptr<bw64::Bw64Reader>& bw64File,
         // for each output channel, apply the mapped input channels...
         ocsample[oc] = 0.0;
         for(size_t ic : channelsMapping.at(oc)) {
-          ocsample[oc] += fileInputBuffer[sample + ic] * gains[oc];
+          ocsample[oc] += fileInputBuffer[sample + ic] * gains[oc] * inputChannelGains[ic];
         }
       }
       filePosition += inputNbChannels;
@@ -169,6 +196,6 @@ void render(const std::unique_ptr<bw64::Bw64Reader>& bw64File,
     fileOutputBuffer.clear();
     delete[] ocsample;
   }
-  std::cout << "Done with: " << outputFileName.str() << std::endl;
+  std::cout << "/// DONE: " << outputFileName.str() << std::endl;
   bw64File->seek(0);
 }

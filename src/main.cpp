@@ -21,13 +21,23 @@ using namespace adm;
 int main(int argc, char **argv) {
 
   // Read input BWF64/ADM file
-  if (argc != 2) {
-    std::cout << "Usage: " << argv[0] << " [INFILE]" << std::endl;
+  if (argc != 3 && argc != 4) {
+    std::cout << "Usage: " << argv[0] << " INPUT OUTPUT [GAIN]" << std::endl;
+    std::cout << "   with INPUT   BW64/ADM audio file" << std::endl;
+    std::cout << "        OUTPUT  Destination directory" << std::endl;
+    std::cout << "        GAIN    Gain to apply to Dialogue (optional)" << std::endl;
     exit(1);
   }
 
   auto bw64File = bw64::readFile(argv[1]);
+  const std::string outputDirectory(argv[2]);
   auto admDocument = parseAdmXml(bw64File);
+
+  float dialogueGain = 1.0;
+  if(argc == 4) {
+    dialogueGain = std::atof(argv[3]);
+  }
+  std::cout << "DIALOGUE GAIN: " << dialogueGain << std::endl;
 
   const std::string outputLayout = "0+2+0"; // defined into libear/resources/2051_layouts.yaml
   const Layout layout = getLayout(outputLayout);
@@ -37,12 +47,13 @@ int main(int argc, char **argv) {
   auto programmes = admDocument->getElements<AudioProgramme>();
   for (int i = 0; i < programmes.size(); ++i)
   {
+    std::cout << "\n/// PROGRAMME DESCRIPTION: "<< std::endl;
     // parse audio programmes to get audio contents
     auto audioProgramme = programmes[i];
     std::cout << "AudioProgramme: " << audioProgramme->get<AudioProgrammeId>().get<AudioProgrammeIdValue>() << ": "
                                     << audioProgramme->get<AudioProgrammeName>();
     if(audioProgramme->has<AudioProgrammeLanguage>()) {
-      std::cout << "(" << audioProgramme->get<AudioProgrammeLanguage>() << ")";
+      std::cout << " (" << audioProgramme->get<AudioProgrammeLanguage>() << ")";
     }
     std::cout << std::endl;
 
@@ -54,11 +65,11 @@ int main(int argc, char **argv) {
     {
       // parse audio content to get audio objects
       auto audioContent = contents[i];
-      std::cout << "\tAudioContent: " << audioContent->get<AudioContentId>().get<AudioContentIdValue>() << ": "
-                                    << audioContent->get<AudioContentName>();
+      std::cout << "\tAudioContent: " << audioContent->get<AudioContentName>();
       if(audioContent->has<AudioContentLanguage>()) {
-        std::cout << "(" << audioContent->get<AudioContentLanguage>() << ")";
+        std::cout << " (" << audioContent->get<AudioContentLanguage>() << ")";
       }
+      std::cout << " [ID: " << audioContent->get<AudioContentId>().get<AudioContentIdValue>() << "]";
       std::cout << std::endl;
 
       auto objects = audioContent->getReferences<AudioObject>();
@@ -66,8 +77,10 @@ int main(int argc, char **argv) {
       {
         // parse audio objects to get audio packs and tracks
         auto audioObject = objects[i];
-        std::cout << "\t\tAudioObject: " << audioObject->get<AudioObjectId>().get<AudioObjectIdValue>() << ": "
-                                         << audioObject->get<AudioObjectName>() << std::endl;
+        const std::string audioObjectName = audioObject->get<AudioObjectName>().get();
+        std::cout << "\t\tAudioObject: " << audioObjectName
+                                         << " [ID: " << audioContent->get<AudioContentId>().get<AudioContentIdValue>() << "]"
+                                         << std::endl;
 
         auto audioPackFormatRefs = audioObject->getReferences<AudioPackFormat>();
 
@@ -79,18 +92,21 @@ int main(int argc, char **argv) {
         if(audioPackFormatRefs.size()) {
           auto audioPackFormat = audioPackFormatRefs[0];
           audioPackFormatId = audioPackFormat->get<AudioPackFormatId>().get<AudioPackFormatIdValue>().get();
-          std::cout << "\t\t\tAudioPackFormat ref: " << audioPackFormat->get<AudioPackFormatId>().get<AudioPackFormatIdValue>() << " ";
+          std::cout << "\t\t\tAudioPackFormatRef: ";
           audioPackFormat->get<AudioPackFormatId>().print(std::cout);
-          std::cout << " => " << audioPackFormat->get<AudioPackFormatName>()
-                    << " " << audioPackFormat->get<TypeDescriptor>() << std::endl;
+          std::cout << " [ID: " << audioPackFormatId << "]"
+                    << " => " << audioPackFormat->get<AudioPackFormatName>()
+                    << " " << formatTypeDefinition(audioPackFormat->get<TypeDescriptor>())
+                    << std::endl;
           typeDescriptor = audioPackFormat->get<TypeDescriptor>();
         }
 
         auto audioTrackUidRefs = audioObject->getReferences<AudioTrackUid>();
         for (int i = 0; i < audioTrackUidRefs.size(); ++i) {
           auto audioTrackUid = audioTrackUidRefs[i];
-          std::cout << "\t\t\tAudioTrackUid ref: " << audioTrackUid->get<AudioTrackUidId>().get<AudioTrackUidIdValue>() << " ";
+          std::cout << "\t\t\tAudioTrackUidRef: ";
           audioTrackUid->get<AudioTrackUidId>().print(std::cout);
+          std::cout << " [ID: " << audioTrackUid->get<AudioTrackUidId>().get<AudioTrackUidIdValue>() << "]";
           std::cout << std::endl;
 
           // TODO: should we compare the AudioTrackUID with the content of the BW64 "chna" chunk to get the channel ID?
@@ -99,12 +115,20 @@ int main(int argc, char **argv) {
           trackIds.push_back(audioTrackUid->get<AudioTrackUidId>().get<AudioTrackUidIdValue>().get() - 1);
         }
 
-        renderers.push_back(AudioObjectRenderer(trackIds, audioPackFormatId, typeDescriptor));
+        AudioObjectRenderer renderer(trackIds, audioPackFormatId, typeDescriptor);
+        float trackGain = 1.0;
+        if(audioObjectName.find("Dialogue") != std::string::npos) {
+          trackGain = dialogueGain;
+        }
+        for(size_t trackId : trackIds) {
+          renderer.setTrackGain(trackId, trackGain);
+        }
+        renderers.push_back(renderer);
       }
     }
 
-    std::cout << "RENDER PROGRAMME:" << std::endl;
-    render(bw64File, layout, programmeTitle, renderers);
+    std::cout << "\n/// PROGRAMME RENDERING: " << programmeTitle << std::endl;
+    render(bw64File, layout, programmeTitle, outputDirectory, renderers);
   }
   return 0;
 }
