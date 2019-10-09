@@ -9,10 +9,8 @@ RUN apt-get update && \
       libboost-dev \
       libyaml-cpp-dev
 
-# We should use https://github.com/ebu/libear.git instead (after PR#9 is validated)
-RUN git clone --recursive https://github.com/valnoel/libear.git && \
+RUN git clone --recursive https://github.com/ebu/libear.git && \
     cd libear/ && \
-    git checkout patch-1 && \
     mkdir build && \
     cd build && \
     cmake .. && \
