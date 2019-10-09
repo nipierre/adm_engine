@@ -5,7 +5,7 @@
 
 #include <adm/common_definitions.hpp>
 
-namespace admrenderer {
+namespace admengine {
 
 AudioObjectRenderer::AudioObjectRenderer(const ear::Layout& outputLayout,
                       const std::shared_ptr<adm::AudioObject>& audioObject,

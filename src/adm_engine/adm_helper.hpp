@@ -7,7 +7,7 @@
 #include <bw64/bw64.hpp>
 #include <ear/ear.hpp>
 
-namespace admrenderer {
+namespace admengine {
 
 std::shared_ptr<adm::AudioObject> createAdmAudioObject(const adm::AudioObjectName& audioObjectName, const ear::Layout& outputLayout);
 

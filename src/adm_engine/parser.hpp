@@ -5,7 +5,7 @@
 
 #include <bw64/bw64.hpp>
 
-namespace admrenderer {
+namespace admengine {
 
   std::shared_ptr<adm::Document> getAdmDocument(const std::shared_ptr<bw64::AxmlChunk>& axmlChunk);
   std::shared_ptr<bw64::AxmlChunk> parseAdmXmlChunk(const std::unique_ptr<bw64::Bw64Reader>& bw64File);

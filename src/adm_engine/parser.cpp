@@ -4,7 +4,7 @@
 
 #include "parser.hpp"
 
-namespace admrenderer {
+namespace admengine {
 
   std::shared_ptr<adm::Document> getAdmDocument(const std::shared_ptr<bw64::AxmlChunk>& axmlChunk) {
     std::stringstream axmlStringstream;
