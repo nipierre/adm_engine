@@ -1,5 +1,7 @@
 # ADM Engine
 
+[![Build Status](https://travis-ci.org/media-cloud-ai/adm_engine.svg?branch=master)](https://travis-ci.org/media-cloud-ai/adm_engine)
+
 ### Required dependencies
 
 The project depends on these libraries:
