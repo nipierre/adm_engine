@@ -4,7 +4,7 @@
 #include <adm/adm.hpp>
 #include <bw64/bw64.hpp>
 
-namespace admrenderer {
+namespace admengine {
 
 class AudioObjectRenderer {
 

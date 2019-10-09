@@ -5,7 +5,7 @@
 #include "adm_engine/renderer.hpp"
 #include "adm_engine/parser.hpp"
 
-using namespace admrenderer;
+using namespace admengine;
 
 int dumpBw64AdmFile(const char* path) {
   auto bw64File = bw64::readFile(path);

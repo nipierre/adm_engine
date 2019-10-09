@@ -3,7 +3,7 @@
 #include "renderer.hpp"
 #include "parser.hpp"
 
-namespace admrenderer {
+namespace admengine {
 
 Renderer::Renderer(const std::unique_ptr<bw64::Bw64Reader>& inputFile,
            const std::string& outputLayout,

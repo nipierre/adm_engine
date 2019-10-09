@@ -12,7 +12,7 @@
 #define PATH_SEPARATOR "/"
 #endif
 
-namespace admrenderer {
+namespace admengine {
 
 const unsigned int BLOCK_SIZE = 4096; // in frames
 
