@@ -23,10 +23,7 @@ before_script:
   - env | sort
   - date -u
   - uname -a
-  # Exit immediately if a command exits with a non-zero status
-  - set -e
-  # Print commands and their arguments as they are executed.
-  - set -x
+  - set -e # Exit immediately if a command exits with a non-zero status
 
   - echo "=== Build libear ==="
   - cd ${TRAVIS_BUILD_DIR}
