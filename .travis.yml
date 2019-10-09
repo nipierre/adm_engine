@@ -1,13 +1,14 @@
 language: cpp
 
 os: linux
+dist: bionic
 
 compiler: gcc
 addons:
   apt:
     packages:
     - git
-    - g++-7
+    - g++
     - cmake
     - libboost-dev
     - libyaml-cpp-dev
