@@ -22,7 +22,8 @@ public:
   void renderAudioFrame(const float* in, float* out);
 
 private:
-  std::string getAudioTrackFormatIdSpeakerLabel(const adm::AudioTrackFormatId& audioTrackFormatId);
+  std::string getSpeakerLabelFromCommonDefinitions(const adm::AudioTrackFormatId& audioTrackFormatId);
+  std::string getAudioTrackFormatSpeakerLabel(const std::shared_ptr<adm::AudioTrackFormat> audioTrackFormat);
   std::string getAudioTrackSpeakerLabel(const std::shared_ptr<adm::AudioTrackUid>& audioTrackUid);
   void setDirectSpeakerTrackGains(const adm::AudioPackFormatId& audioPackFormatId, const std::shared_ptr<adm::AudioTrackUid>& audioTrackUid);
   void init();
