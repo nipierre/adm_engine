@@ -36,6 +36,7 @@ before_script:
   - echo "=== Build libadm ==="
   - cd ${TRAVIS_BUILD_DIR}
   - git clone https://github.com/IRT-Open-Source/libadm.git && cd libadm/
+  - git checkout 0.11.0
   - mkdir build && cd build
   - cmake ..
   - make
@@ -44,6 +45,7 @@ before_script:
   - echo "=== Build libbw64 ==="
   - cd ${TRAVIS_BUILD_DIR}
   - git clone https://github.com/IRT-Open-Source/libbw64.git && cd libbw64/
+  - git checkout 0.10.0
   - mkdir build && cd build
   - cmake ..
   - make
