@@ -46,7 +46,7 @@ void AudioObjectRenderer::renderAudioFrame(const float* inputFrame, float* outpu
   }
 }
 
-std::string AudioObjectRenderer::getAudioTrackFormatIdSpeakerLabel(const adm::AudioTrackFormatId& audioTrackFormatId) {
+std::string AudioObjectRenderer::getSpeakerLabelFromCommonDefinitions(const adm::AudioTrackFormatId& audioTrackFormatId) {
   std::map<std::string, adm::AudioTrackFormatId> audioTrackFormatBySpeakerLabelMap = adm::audioTrackFormatLookupTable();
   for(auto& entry : audioTrackFormatBySpeakerLabelMap) {
     if(entry.second == audioTrackFormatId) {
@@ -54,21 +54,54 @@ std::string AudioObjectRenderer::getAudioTrackFormatIdSpeakerLabel(const adm::Au
       return entry.first;
     }
   }
-  throw std::runtime_error("No speaker label found.");
+  return "";
+}
+
+std::string AudioObjectRenderer::getAudioTrackFormatSpeakerLabel(const std::shared_ptr<adm::AudioTrackFormat> audioTrackFormat) {
+  std::shared_ptr<adm::AudioStreamFormat> audioStreamFormat = audioTrackFormat->getReference<adm::AudioStreamFormat>();
+  if(audioStreamFormat) {
+    std::shared_ptr<adm::AudioChannelFormat> audioChannelFormat = audioStreamFormat->getReference<adm::AudioChannelFormat>();
+    if(audioChannelFormat) {
+       // check whether type descriptor is DIRECT_SPEAKERS
+      const adm::TypeDescriptor typeDescriptor = audioChannelFormat->get<adm::TypeDescriptor>();
+      if(typeDescriptor.get() != 1) {
+        std::cout << "[WARNING] Speaker label cannot be extracted from AudioChannelFormat with type descriptor: " << adm::formatTypeDefinition(typeDescriptor) << std::endl;
+        return "";
+      }
+
+      for(adm::AudioBlockFormatDirectSpeakers audioBlockFormat : audioChannelFormat->getElements<adm::AudioBlockFormatDirectSpeakers>()) {
+        for(adm::SpeakerLabel speakerLabel : audioBlockFormat.get<adm::SpeakerLabels>()) {
+          std::string speakerLabelStr = speakerLabel.get();
+          if(speakerLabelStr.size()) {
+            return speakerLabelStr;
+          }
+        }
+      }
+    }
+  }
+  return "";
 }
 
 std::string AudioObjectRenderer::getAudioTrackSpeakerLabel(const std::shared_ptr<adm::AudioTrackUid>& audioTrackUid) {
   std::shared_ptr<adm::AudioTrackFormat> audioTrackFormat = audioTrackUid->getReference<adm::AudioTrackFormat>();
   if(audioTrackFormat) {
-    adm::AudioTrackFormatId audioTrackFormatId = audioTrackFormat->get<adm::AudioTrackFormatId>();
-    return getAudioTrackFormatIdSpeakerLabel(audioTrackFormatId);
+    std::string speakerLabel = getAudioTrackFormatSpeakerLabel(audioTrackFormat);
+    if(speakerLabel.empty()) {
+      adm::AudioTrackFormatId audioTrackFormatId = audioTrackFormat->get<adm::AudioTrackFormatId>();
+      speakerLabel = getSpeakerLabelFromCommonDefinitions(audioTrackFormatId);
+    }
+    if(speakerLabel.empty()) {
+      throw std::runtime_error("No speaker label found.");
+    } else {
+      return speakerLabel;
+    }
   } else if(_chnaChunk) {
     std::cout << "[WARNING] No AudioTrackFormat into ADM XML. Check into CHNA chunk content..." << std::endl;
     std::string audioTrackUidStr = adm::formatId(audioTrackUid->get<adm::AudioTrackUidId>());
     for (auto audioId : _chnaChunk->audioIds()) {
       if(audioTrackUidStr == audioId.uid()) {
         adm::AudioTrackFormatId audioTrackFormatId = adm::parseAudioTrackFormatId(audioId.trackRef());
-        return getAudioTrackFormatIdSpeakerLabel(audioTrackFormatId);
+        return getSpeakerLabelFromCommonDefinitions(audioTrackFormatId);
       }
     }
   }
