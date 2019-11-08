@@ -30,7 +30,7 @@ void displayUsage(const char* application) {
   std::cout << "        OUTPUT             Destination directory (optional)" << std::endl;
   std::cout << "                             - if specified, enable ADM rendering to BW64/ADM file" << std::endl;
   std::cout << "                             - otherwise, dump input BW64/ADM file information" << std::endl;
-  std::cout << "        ELEMENT_ID=GAIN    GAIN value to apply to ADM element defined by its ELEMENT_ID (optional)" << std::endl;
+  std::cout << "        ELEMENT_ID=GAIN    GAIN value (in dB) to apply to ADM element defined by its ELEMENT_ID (optional)" << std::endl;
 }
 
 std::map<std::string, float> getElementGains(int argc, char **argv) {
@@ -39,8 +39,9 @@ std::map<std::string, float> getElementGains(int argc, char **argv) {
     std::string gainPair(argv[i]);
     size_t splitPos = gainPair.find("=");
     std::string elemId = gainPair.substr(0, splitPos);
-    std::string gainStr = gainPair.substr(splitPos + 1, gainPair.size());
-    elementGains[elemId] = std::atof(gainStr.c_str());
+    std::string gainDbStr = gainPair.substr(splitPos + 1, gainPair.size());
+    elementGains[elemId] = pow(10.0, std::atof(gainDbStr.c_str()) / 20.0);
+    std::cout << "Gain: " << elementGains[elemId] << " (" << gainDbStr << " dB) applied to " << elemId << std::endl;
   }
   return elementGains;
 }
