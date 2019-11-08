@@ -187,6 +187,22 @@ namespace admengine {
     return audioObjects;
   }
 
+  std::vector<std::shared_ptr<adm::AudioContent>> getAudioContents(const std::shared_ptr<adm::AudioProgramme>& audioProgramme) {
+    std::vector<std::shared_ptr<adm::AudioContent>> audioContents;
+    for(auto audioContent : audioProgramme->getReferences<adm::AudioContent>()) {
+      audioContents.push_back(audioContent);
+    }
+    return audioContents;
+  }
+
+  std::vector<std::shared_ptr<adm::AudioObject>> getAudioObjects(const std::shared_ptr<adm::AudioContent>& audioContent) {
+    std::vector<std::shared_ptr<adm::AudioObject>> audioObjects;
+    for(auto audioObjectRef : audioContent->getReferences<adm::AudioObject>()) {
+      audioObjects.push_back(audioObjectRef);
+    }
+    return audioObjects;
+  }
+
   std::vector<std::shared_ptr<adm::AudioTrackUid>> getAudioTrackUids(const std::shared_ptr<adm::AudioObject>& audioObject) {
     std::vector<std::shared_ptr<adm::AudioTrackUid>> audioTrackUids;
     for(auto audioTrackUidRef : audioObject->getReferences<adm::AudioTrackUid>()) {

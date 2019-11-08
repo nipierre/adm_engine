@@ -31,6 +31,8 @@ namespace admengine {
 
 
   std::vector<std::shared_ptr<adm::AudioObject>> getAudioObjects(const std::shared_ptr<adm::AudioProgramme>& audioProgramme);
+  std::vector<std::shared_ptr<adm::AudioObject>> getAudioObjects(const std::shared_ptr<adm::AudioContent>& audioContent);
+  std::vector<std::shared_ptr<adm::AudioContent>> getAudioContents(const std::shared_ptr<adm::AudioProgramme>& audioProgramme);
   std::vector<std::shared_ptr<adm::AudioTrackUid>> getAudioTrackUids(const std::shared_ptr<adm::AudioObject>& audioObject);
   std::vector<std::shared_ptr<adm::AudioPackFormat>> getAudioPackFormats(const std::shared_ptr<adm::AudioObject>& audioObject);
 

@@ -8,12 +8,12 @@ namespace admengine {
 Renderer::Renderer(const std::unique_ptr<bw64::Bw64Reader>& inputFile,
            const std::string& outputLayout,
            const std::string& outputDirectory,
-           const float dialogGain)
+           const std::map<std::string, float> elementGains)
   : _inputFile(inputFile)
   , _inputNbChannels(inputFile->channels())
   , _outputLayout(ear::getLayout(outputLayout))
   , _outputDirectory(outputDirectory)
-  , _dialogGain(dialogGain)
+  , _elementGainsMap(elementGains)
 {
   _admDocument = getAdmDocument(parseAdmXmlChunk(_inputFile));
   _chnaChunk = parseAdmChnaChunk(_inputFile);
@@ -76,24 +76,24 @@ std::shared_ptr<bw64::ChnaChunk> Renderer::getAdmChnaChunk() const {
 
 void Renderer::initAudioProgrammeRendering(const std::shared_ptr<adm::AudioProgramme>& audioProgramme) {
   _renderers.clear();
-  for(const std::shared_ptr<adm::AudioObject> audioObject : getAudioObjects(audioProgramme)) {
-    AudioObjectRenderer renderer(_outputLayout, audioObject, _chnaChunk);
-    if(audioObject->get<adm::AudioObjectName>().get().find("Dialog") != std::string::npos) {
-      // Apply dialog gain
-      renderer.applyUserGain(_dialogGain);
+  const float audioProgrammeGain = getElementGain(formatId(audioProgramme->get<adm::AudioProgrammeId>()));
+  for(const std::shared_ptr<adm::AudioContent> audioContent : getAudioContents(audioProgramme)) {
+    const float audioContentGain = audioProgrammeGain * getElementGain(formatId(audioContent->get<adm::AudioContentId>()));
+    for(const std::shared_ptr<adm::AudioObject> audioObject : getAudioObjects(audioContent)) {
+      AudioObjectRenderer renderer(_outputLayout, audioObject, _chnaChunk);
+      const float audioObjectGain = audioContentGain * getElementGain(formatId(audioObject->get<adm::AudioObjectId>()));
+      renderer.applyUserGain(audioObjectGain);
+      std::cout << " >> Add renderer: " << renderer << std::endl;
+      _renderers.push_back(renderer);
     }
-    std::cout << " >> Add renderer: " << renderer << std::endl;
-    _renderers.push_back(renderer);
   }
 }
 
 void Renderer::initAudioObjectRendering(const std::shared_ptr<adm::AudioObject>& audioObject) {
   _renderers.clear();
   AudioObjectRenderer renderer(_outputLayout, audioObject, _chnaChunk);
-  if(audioObject->get<adm::AudioObjectName>().get().find("Dialog") != std::string::npos) {
-    // Apply dialog gain
-    renderer.applyUserGain(_dialogGain);
-  }
+  const float audioObjectGain = getElementGain(formatId(audioObject->get<adm::AudioObjectId>()));
+  renderer.applyUserGain(audioObjectGain);
   std::cout << " >> Add renderer: " << renderer << std::endl;
   _renderers.push_back(renderer);
 }

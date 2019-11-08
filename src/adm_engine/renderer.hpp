@@ -22,7 +22,7 @@ public:
   Renderer(const std::unique_ptr<bw64::Bw64Reader>& inputFile,
            const std::string& outputLayout,
            const std::string& outputDirectory = ".",
-           const float dialogGain = 1.0);
+           const std::map<std::string, float> elementGains = {});
 
   void process();
 
@@ -48,11 +48,19 @@ public:
   std::shared_ptr<bw64::ChnaChunk> getAdmChnaChunk() const;
 
 private:
+  float getElementGain(const std::string& elementId) {
+    if(_elementGainsMap.find(elementId) == _elementGainsMap.end()) {
+      return 1.0;
+    }
+    return _elementGainsMap.at(elementId);
+  }
+
+private:
   const std::unique_ptr<bw64::Bw64Reader>& _inputFile;
   const size_t _inputNbChannels;
   const ear::Layout _outputLayout;
   const std::string _outputDirectory;
-  const float _dialogGain;
+  const std::map<std::string, float> _elementGainsMap;
 
   std::shared_ptr<adm::Document> _admDocument;
   std::shared_ptr<bw64::ChnaChunk> _chnaChunk;
