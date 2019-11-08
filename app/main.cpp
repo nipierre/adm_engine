@@ -33,7 +33,7 @@ void displayUsage(const char* application) {
   std::cout << "  INPUT                   BW64/ADM audio file path" << std::endl;
   std::cout << "  OPTIONS:" << std::endl;
   std::cout << "    -o OUTPUT            Destination directory" << std::endl;
-  std::cout << "    -e ELEMENT_ID        ADM element defined by its ELEMENT_ID to render (AudioProgramme or AudioObject only)" << std::endl;
+  std::cout << "    -e ELEMENT_ID        Select the AudioProgramme or AudioObject to be renderer by ELEMENT_ID" << std::endl;
   std::cout << "    -g ELEMENT_ID=GAIN   GAIN value (in dB) to apply to ADM element defined by its ELEMENT_ID" << std::endl;
   std::cout << std::endl;
   std::cout << "  If no OUTPUT argument is specified, this program dumps the input BW64/ADM file information." << std::endl;
@@ -45,7 +45,7 @@ void displayUsage(const char* application) {
   std::cout << "    - Rendering ADM:" << std::endl;
   std::cout << "          " << application << " /path/to/input/file.wav -o /path/to/output/directory" << std::endl;
   std::cout << "    - Rendering specified ADM element:" << std::endl;
-  std::cout << "          " << application << " /path/to/input/file.wav  -e APR_1002 -o /path/to/output/directory" << std::endl;
+  std::cout << "          " << application << " /path/to/input/file.wav -e APR_1002 -o /path/to/output/directory" << std::endl;
   std::cout << "    - Rendering ADM, applying gains to elements:" << std::endl;
   std::cout << "          " << application << " /path/to/input/file.wav -o /path/to/output/directory -g AO_1001=-4.0 -g ACO_1002=5.0" << std::endl;
   std::cout << std::endl;

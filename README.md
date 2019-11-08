@@ -24,7 +24,7 @@ Usage: ./adm-engine INPUT [OPTIONS]
   INPUT                   BW64/ADM audio file path
   OPTIONS:
     -o OUTPUT            Destination directory
-    -e ELEMENT_ID        ADM element defined by its ELEMENT_ID to render (AudioProgramme or AudioObject only)
+    -e ELEMENT_ID        Select the AudioProgramme or AudioObject to be renderer by ELEMENT_ID
     -g ELEMENT_ID=GAIN   GAIN value (in dB) to apply to ADM element defined by its ELEMENT_ID
 
   If no OUTPUT argument is specified, this program dumps the input BW64/ADM file information.
@@ -36,7 +36,7 @@ Usage: ./adm-engine INPUT [OPTIONS]
     - Rendering ADM:
           ./adm-engine /path/to/input/file.wav -o /path/to/output/directory
     - Rendering specified ADM element:
-          ./adm-engine /path/to/input/file.wav  -e APR_1002 -o /path/to/output/directory
+          ./adm-engine /path/to/input/file.wav -e APR_1002 -o /path/to/output/directory
     - Rendering ADM, applying gains to elements:
           ./adm-engine /path/to/input/file.wav -o /path/to/output/directory -g AO_1001=-4.0 -g ACO_1002=5.0
 
