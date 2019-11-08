@@ -8,19 +8,41 @@ namespace admengine {
 Renderer::Renderer(const std::unique_ptr<bw64::Bw64Reader>& inputFile,
            const std::string& outputLayout,
            const std::string& outputDirectory,
-           const std::map<std::string, float> elementGains)
+           const std::map<std::string, float> elementGains,
+           const std::string& elementIdToRender)
   : _inputFile(inputFile)
   , _inputNbChannels(inputFile->channels())
   , _outputLayout(ear::getLayout(outputLayout))
   , _outputDirectory(outputDirectory)
   , _elementGainsMap(elementGains)
+  , _elementIdToRender(elementIdToRender)
 {
   _admDocument = getAdmDocument(parseAdmXmlChunk(_inputFile));
   _chnaChunk = parseAdmChnaChunk(_inputFile);
 }
 
 void Renderer::process() {
-  /// Based on Rec. ITU-R  BS.2127-0, 5.2 Determination of Rendering Items (Fig. 3)
+  // if the user selected an item ID to render, find it and render
+  if(!_elementIdToRender.empty()) {
+    for(auto audioProgramme : getDocumentAudioProgrammes()) {
+      if(_elementIdToRender == formatId(audioProgramme->get<adm::AudioProgrammeId>())) {
+        std::cout << "### Render audio programme: " << toString(audioProgramme) << std::endl;
+        initAudioProgrammeRendering(audioProgramme);
+        processAudioProgramme(audioProgramme);
+        return;
+      }
+    }
+    for(auto audioObject : getDocumentAudioObjects()) {
+      if(_elementIdToRender == formatId(audioObject->get<adm::AudioObjectId>())) {
+        std::cout << "### Render audio object: " << toString(audioObject) << std::endl;
+        initAudioObjectRendering(audioObject);
+        processAudioObject(audioObject);
+        return;
+      }
+    }
+  }
+
+  // otherwise select items to render, based on Rec. ITU-R  BS.2127-0, 5.2 Determination of Rendering Items (Fig. 3)
   auto audioProgrammes = getDocumentAudioProgrammes();
   if(audioProgrammes.size()) {
     for(auto audioProgramme : audioProgrammes) {
