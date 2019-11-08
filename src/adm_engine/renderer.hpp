@@ -21,8 +21,9 @@ class Renderer {
 public:
   Renderer(const std::unique_ptr<bw64::Bw64Reader>& inputFile,
            const std::string& outputLayout,
-           const std::string& outputDirectory = ".",
-           const std::map<std::string, float> elementGains = {});
+           const std::string& outputDirectory,
+           const std::map<std::string, float> elementGains = {},
+           const std::string& elementIdToRender = "");
 
   void process();
 
@@ -61,6 +62,7 @@ private:
   const ear::Layout _outputLayout;
   const std::string _outputDirectory;
   const std::map<std::string, float> _elementGainsMap;
+  const std::string _elementIdToRender;
 
   std::shared_ptr<adm::Document> _admDocument;
   std::shared_ptr<bw64::ChnaChunk> _chnaChunk;
