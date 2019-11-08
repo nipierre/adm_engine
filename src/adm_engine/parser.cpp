@@ -11,7 +11,7 @@ namespace admengine {
     if (axmlChunk) {
       axmlChunk->write(axmlStringstream);
     } else {
-      std::cerr << "could not find an axml chunk";
+      std::cerr << "Error: could not find any axml chunk" << std::endl;
       exit(1);
     }
     return adm::parseXml(axmlStringstream);
@@ -183,6 +183,22 @@ namespace admengine {
       for(auto audioObjectRef : audioContent->getReferences<adm::AudioObject>()) {
         audioObjects.push_back(audioObjectRef);
       }
+    }
+    return audioObjects;
+  }
+
+  std::vector<std::shared_ptr<adm::AudioContent>> getAudioContents(const std::shared_ptr<adm::AudioProgramme>& audioProgramme) {
+    std::vector<std::shared_ptr<adm::AudioContent>> audioContents;
+    for(auto audioContent : audioProgramme->getReferences<adm::AudioContent>()) {
+      audioContents.push_back(audioContent);
+    }
+    return audioContents;
+  }
+
+  std::vector<std::shared_ptr<adm::AudioObject>> getAudioObjects(const std::shared_ptr<adm::AudioContent>& audioContent) {
+    std::vector<std::shared_ptr<adm::AudioObject>> audioObjects;
+    for(auto audioObjectRef : audioContent->getReferences<adm::AudioObject>()) {
+      audioObjects.push_back(audioObjectRef);
     }
     return audioObjects;
   }
