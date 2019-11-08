@@ -11,7 +11,7 @@ namespace admengine {
     if (axmlChunk) {
       axmlChunk->write(axmlStringstream);
     } else {
-      std::cerr << "could not find an axml chunk";
+      std::cerr << "Error: could not find any axml chunk" << std::endl;
       exit(1);
     }
     return adm::parseXml(axmlStringstream);
