@@ -41,7 +41,6 @@ std::map<std::string, float> getElementGains(int argc, char **argv) {
     std::string elemId = gainPair.substr(0, splitPos);
     std::string gainDbStr = gainPair.substr(splitPos + 1, gainPair.size());
     elementGains[elemId] = pow(10.0, std::atof(gainDbStr.c_str()) / 20.0);
-    std::cout << "Gain: " << elementGains[elemId] << " (" << gainDbStr << " dB) applied to " << elemId << std::endl;
   }
   return elementGains;
 }

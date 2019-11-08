@@ -19,10 +19,10 @@ make install
 
 ### Usage
 ```
-Usage: ./adm-engine INPUT [OUTPUT] [GAIN]
-   with INPUT   BW64/ADM audio file
-        OUTPUT  Destination directory (optional)
-                  - if specified, enable ADM rendering to BW64/ADM file
-                  - otherwise, dump input BW64/ADM file information
-        GAIN    Gain to apply to Dialogue (optional)
+Usage: ./adm-engine INPUT [OUTPUT] [ELEMENT_ID=GAIN]
+   with INPUT              BW64/ADM audio file
+        OUTPUT             Destination directory (optional)
+                             - if specified, enable ADM rendering to BW64/ADM file
+                             - otherwise, dump input BW64/ADM file information
+        ELEMENT_ID=GAIN    GAIN value (in dB) to apply to ADM element defined by its ELEMENT_ID (optional)
 ```
