@@ -41,3 +41,7 @@ Usage: ./adm-engine INPUT [OPTIONS]
           ./adm-engine /path/to/input/file.wav -o /path/to/output/directory -g AO_1001=-4.0 -g ACO_1002=5.0
 
 ```
+
+### Worker
+
+See related [documentation](src/adm_worker/WORKER.md).
