@@ -40,6 +40,9 @@ void Renderer::process() {
         return;
       }
     }
+    std::stringstream message;
+    message << "Could not find any audio element from ID: '" << _elementIdToRender << "'. ";
+    throw std::runtime_error(message.str());
   }
 
   // otherwise select items to render, based on Rec. ITU-R  BS.2127-0, 5.2 Determination of Rendering Items (Fig. 3)
