@@ -30,7 +30,7 @@ int renderAdmContent(const std::string& input,
 void displayUsage(const char* application) {
   std::cout << "Usage: " << application << " INPUT [OPTIONS]" << std::endl;
   std::cout << std::endl;
-  std::cout << "  INPUT                   BW64/ADM audio file path" << std::endl;
+  std::cout << "  INPUT                  BW64/ADM audio file path" << std::endl;
   std::cout << "  OPTIONS:" << std::endl;
   std::cout << "    -o OUTPUT            Destination directory" << std::endl;
   std::cout << "    -e ELEMENT_ID        Select the AudioProgramme or AudioObject to be renderer by ELEMENT_ID" << std::endl;
