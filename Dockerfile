@@ -45,7 +45,7 @@ RUN cd adm_engine && \
     make && \
     make install
 
-FROM mediacloudai/c_amqp_worker:latest
+FROM mediacloudai/c_amqp_worker:v0.1.0
 
 COPY --from=builder /usr/local/bin/adm-engine /app/adm_engine/bin/adm-engine
 COPY --from=builder /usr/local/lib/ /app/adm_engine/lib/
