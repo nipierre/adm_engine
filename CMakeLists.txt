@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(adm-engine VERSION 1.0.0 LANGUAGES CXX)
+project(adm-engine VERSION 1.0.0 LANGUAGES C CXX)
 
 find_package(Boost 1.57 REQUIRED)
 find_package(adm REQUIRED)
@@ -14,6 +14,9 @@ target_link_libraries(admengine PRIVATE adm)
 
 include_directories("${PROJECT_SOURCE_DIR}/src")
 
+add_library(admengineworker SHARED ${SOURCE_FILES} ${PROJECT_SOURCE_DIR}/src/adm_worker/worker.cpp)
+target_link_libraries(admengineworker PRIVATE admengine)
+
 add_executable(adm-engine app/main.cpp)
 target_link_libraries(adm-engine PRIVATE admengine)
 target_link_libraries(adm-engine PRIVATE adm)
@@ -21,4 +24,5 @@ target_link_libraries(adm-engine PRIVATE ear)
 
 install(TARGETS adm-engine DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
 install(TARGETS admengine DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
+install(TARGETS admengineworker DESTINATION ${CMAKE_INSTALL_PREFIX}/worker)
 install(FILES ${HEADER_FILES} DESTINATION ${CMAKE_INSTALL_PREFIX}/include/adm_engine)
