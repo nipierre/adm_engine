@@ -45,16 +45,18 @@ RUN cd adm_engine && \
     make && \
     make install
 
-FROM mediacloudai/rs_command_line_worker:latest
+FROM mediacloudai/c_amqp_worker:latest
 
 COPY --from=builder /usr/local/bin/adm-engine /app/adm_engine/bin/adm-engine
 COPY --from=builder /usr/local/lib/ /app/adm_engine/lib/
+COPY --from=builder /usr/local/worker/ /app/adm_engine/worker/
 COPY --from=builder /usr/lib/x86_64-linux-gnu/libyaml-cpp.so* /app/adm_engine/lib/
 
 WORKDIR /app/adm_engine
 
 ENV AMQP_QUEUE job_adm_engine
 ENV LD_LIBRARY_PATH $LD_LIBRARY_PATH:/app/adm_engine/lib
+ENV WORKER_LIBRARY_FILE /app/adm_engine/worker/libadmengineworker.so
 ENV PATH $PATH:/app/adm_engine/bin
 
-CMD command_line_worker
+CMD c_amqp_worker
