@@ -11,6 +11,7 @@ file(GLOB SOURCE_FILES ${PROJECT_SOURCE_DIR}/src/adm_engine/*.cpp ${HEADER_FILES
 add_library(admengine STATIC ${SOURCE_FILES})
 target_link_libraries(admengine PRIVATE ear)
 target_link_libraries(admengine PRIVATE adm)
+set_property(TARGET admengine PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 include_directories("${PROJECT_SOURCE_DIR}/src")
 
