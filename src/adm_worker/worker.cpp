@@ -109,14 +109,14 @@ extern "C" {
  * Get worker name
  */
 char* get_name() {
-	return (char*)"adm_engine_worker";
+	return (char*)"ADM Engine Worker";
 }
 
 /**
  * Get worker short description
  */
 char* get_short_description() {
-	return (char*)"ADM engine worker";
+	return (char*)"Processes BW64/ADM audio file rendering.";
 }
 
 /**
