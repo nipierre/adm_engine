@@ -11,6 +11,8 @@ namespace admengine {
   std::shared_ptr<bw64::AxmlChunk> parseAdmXmlChunk(const std::unique_ptr<bw64::Bw64Reader>& bw64File);
   std::shared_ptr<bw64::ChnaChunk> parseAdmChnaChunk(const std::unique_ptr<bw64::Bw64Reader>& bw64File);
 
+  std::string getAdmDocumentAsString(const std::shared_ptr<adm::Document>& admDocument);
+
   void displayAdmDocument(const std::shared_ptr<adm::Document>& admDocument);
   void displayChnaChunk(const std::shared_ptr<bw64::ChnaChunk>& chnaChunk);
   void displayBw64FileInfos(const std::unique_ptr<bw64::Bw64Reader>& bw64File);
