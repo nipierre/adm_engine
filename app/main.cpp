@@ -79,6 +79,7 @@ int main(int argc, char **argv) {
       elementGains[elemId] = pow(10.0, std::atof(gainDbStr.c_str()) / 20.0);
       std::cout << "Gain:                  " << elementGains[elemId] << " (" << gainDbStr << " dB) applied to " << elemId << std::endl;
     } else {
+      std::cerr << "Unexpected argument: " << argv[i] << std::endl << std::endl;
       displayUsage(argv[0]);
       return 1;
     }
