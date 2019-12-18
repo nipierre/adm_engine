@@ -35,11 +35,15 @@ namespace admengine {
     return std::shared_ptr<bw64::ChnaChunk>();
   }
 
-  void displayAdmDocument(const std::shared_ptr<adm::Document>& admDocument) {
-    std::cout << "### ADM XML:" << std::endl;
+  std::string getAdmDocumentAsString(const std::shared_ptr<adm::Document>& admDocument) {
     std::stringstream xmlStream;
     adm::writeXml(xmlStream, admDocument);
-    std::cout << xmlStream.str();
+    return xmlStream.str();
+  }
+
+  void displayAdmDocument(const std::shared_ptr<adm::Document>& admDocument) {
+    std::cout << "### ADM XML:" << std::endl;
+    std::cout << getAdmDocumentAsString(admDocument);
   }
 
   void displayChnaChunk(const std::shared_ptr<bw64::ChnaChunk>& chnaChunk) {
@@ -64,7 +68,7 @@ namespace admengine {
     std::cout << " - channels: " << bw64File->channels() << std::endl;
     std::cout << " - sampleRate: " << bw64File->sampleRate() << std::endl;
     std::cout << " - bitDepth: " << bw64File->bitDepth() << std::endl;
-    std::cout << " - numerOfFrames: " << bw64File->numberOfFrames() << std::endl;
+    std::cout << " - numberOfFrames: " << bw64File->numberOfFrames() << std::endl;
   }
 
 

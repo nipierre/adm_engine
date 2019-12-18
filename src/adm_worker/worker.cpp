@@ -12,11 +12,16 @@
 
 using namespace admengine;
 
-int dumpBw64AdmFile(const std::string& path) {
+void assignStringtoPointer(const std::string& str, char* pointer) {
+  std::copy(str.begin(), str.end(), pointer);
+  pointer[str.size()] = '\0';
+}
+
+int dumpBw64AdmFile(const std::string& path, char* output_message) {
   auto bw64File = bw64::readFile(path);
-  displayBw64FileInfos(bw64File);
-  displayAdmDocument(getAdmDocument(parseAdmXmlChunk(bw64File)));
-  displayChnaChunk(parseAdmChnaChunk(bw64File));
+  const std::string admDocumentStr = getAdmDocumentAsString(getAdmDocument(parseAdmXmlChunk(bw64File)));
+  assignStringtoPointer(admDocumentStr, output_message);
+  std::cout << output_message << std::endl;
   return 0;
 }
 
@@ -57,7 +62,8 @@ std::map<std::string, float> parseElementGains(const std::string& elementGainsSt
 int renderAdmContent(const char* input,
                      const char* destination,
                      const char* elementGainsCStr,
-                     const char* elementIdToRenderCStr) {
+                     const char* elementIdToRenderCStr,
+                     char* output_message) {
 
   const std::string inputFilePath(input);
   const std::string outputDirectoryPath(destination);
@@ -82,7 +88,9 @@ int renderAdmContent(const char* input,
     Renderer renderer(bw64File, outputLayout, outputDirectoryPath, elementGains, elementIdToRender);
     renderer.process();
   } catch(const std::exception& e) {
-    std::cerr << "Error: " << e.what() << std::endl;
+    std::string error(e.what());
+    std::cerr << "Error: " << error << std::endl;
+    assignStringtoPointer(error, output_message);
     return 1;
   }
   return 0;
@@ -206,7 +214,7 @@ typedef int* (*CheckError)();
  * @param checkError               Check error callback
  * @param logger                   Rust logger callback
  */
-int process(JobParameters job, GetParameterValueCallback parametersValueGetter, CheckError checkError, Logger logger) {
+int process(JobParameters job, GetParameterValueCallback parametersValueGetter, CheckError checkError, Logger logger, char* output_message) {
     // Print message through the Rust internal logger
     logger("Start C Worker process...");
 
@@ -224,9 +232,9 @@ int process(JobParameters job, GetParameterValueCallback parametersValueGetter, 
     char* elementIdToRender = parametersValueGetter(job, "element_id");
 
     if(outputDirectoryPath == NULL) {
-    	return dumpBw64AdmFile(inputFilePath);
+    	return dumpBw64AdmFile(inputFilePath, output_message);
     } else {
-    	return renderAdmContent(inputFilePath, outputDirectoryPath, elementGainsStr, elementIdToRender);
+    	return renderAdmContent(inputFilePath, outputDirectoryPath, elementGainsStr, elementIdToRender, output_message);
     }
 }
 

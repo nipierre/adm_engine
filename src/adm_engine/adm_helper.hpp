@@ -17,4 +17,6 @@ std::shared_ptr<adm::Document> createAdmDocument(const std::shared_ptr<adm::Audi
 std::shared_ptr<bw64::AxmlChunk> createAxmlChunk(const std::shared_ptr<adm::Document>& admDocument);
 std::shared_ptr<bw64::ChnaChunk> createChnaChunk(const std::shared_ptr<adm::Document>& admDocument);
 
+void copyAudioProgramme(const std::shared_ptr<adm::Document>& admDocument, const std::shared_ptr<adm::AudioProgramme>& audioProgramme);
+
 }
