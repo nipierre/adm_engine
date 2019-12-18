@@ -1,6 +1,8 @@
 
 #include "adm_helper.hpp"
 
+#include "parser.hpp"
+
 namespace admengine {
 
 std::shared_ptr<adm::AudioObject> createAdmAudioObject(const adm::AudioObjectName& audioObjectName, const ear::Layout& outputLayout) {
@@ -65,6 +67,53 @@ std::shared_ptr<bw64::ChnaChunk> createChnaChunk(const std::shared_ptr<adm::Docu
     }
   }
   return std::shared_ptr<bw64::ChnaChunk>(new bw64::ChnaChunk(audioIds));
+}
+
+void copyAudioProgramme(const std::shared_ptr<adm::Document>& admDocument, const std::shared_ptr<adm::AudioProgramme>& audioProgramme) {
+  std::shared_ptr<adm::AudioProgramme> audioProgrammeCopy = audioProgramme->copy();
+
+  std::vector<std::shared_ptr<adm::AudioContent>> audioContents = getAudioContents(audioProgramme);
+  for(auto audioContent : audioContents) {
+
+    auto audioContentCopy = audioContent->copy();
+    std::vector<std::shared_ptr<adm::AudioObject>> audioObjects = getAudioObjects(audioContent);
+    for(auto audioObject : audioObjects) {
+      auto audioObjectCopy = audioObject->copy();
+
+      std::vector<std::shared_ptr<adm::AudioPackFormat>> audioPackFormats = getAudioPackFormats(audioObject);
+      for(auto audioPackFormat : audioPackFormats) {
+        auto audioPackFormatCopy = audioPackFormat->copy();
+
+        audioObjectCopy->addReference(audioPackFormatCopy);
+      }
+
+      std::vector<std::shared_ptr<adm::AudioTrackUid>> audioTracktUids = getAudioTrackUids(audioObject);
+      for(auto audioTrackUid : audioTracktUids) {
+        auto audioTrackUidCopy = audioTrackUid->copy();
+
+        std::vector<std::shared_ptr<adm::AudioPackFormat>> audioPackFormatCopys = getAudioPackFormats(audioObjectCopy);
+        for(auto audioPackFormatCopy : audioPackFormatCopys) {
+          audioTrackUidCopy->setReference(audioPackFormatCopy);
+        }
+
+        auto audioTrackFormat = audioTrackUid->getReference<adm::AudioTrackFormat>();
+        if(audioTrackFormat) {
+          auto audioTrackFormatCopy = audioTrackFormat->copy();
+          audioTrackUidCopy->setReference(audioTrackFormatCopy);
+        }
+
+        audioObjectCopy->addReference(audioTrackUidCopy);
+        admDocument->add(audioTrackUidCopy);
+      }
+
+      audioContentCopy->addReference(audioObjectCopy);
+      admDocument->add(audioObjectCopy);
+    }
+
+    audioProgrammeCopy->addReference(audioContentCopy);
+    admDocument->add(audioContentCopy);
+  }
+  admDocument->add(audioProgrammeCopy);
 }
 
 }
