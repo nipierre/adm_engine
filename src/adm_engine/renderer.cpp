@@ -2,6 +2,7 @@
 #include "adm_helper.hpp"
 #include "renderer.hpp"
 #include "parser.hpp"
+#include "utils.hpp"
 
 namespace admengine {
 
@@ -136,7 +137,7 @@ void Renderer::processAudioProgramme(const std::shared_ptr<adm::AudioProgramme>&
   if(_outputDirectory.back() != std::string(PATH_SEPARATOR).back()) {
     outputFileName << PATH_SEPARATOR;
   }
-  outputFileName << audioProgramme->get<adm::AudioProgrammeName>().get() << ".wav";
+  outputFileName << replaceSpecialCharacters(audioProgramme->get<adm::AudioProgrammeName>().get()) << ".wav";
   std::unique_ptr<bw64::Bw64Writer> outputFile =
     bw64::writeFile(outputFileName.str(), _outputLayout.channels().size(), _inputFile->sampleRate(), _inputFile->bitDepth(), chna, axml);
 
@@ -156,7 +157,7 @@ void Renderer::processAudioObject(const std::shared_ptr<adm::AudioObject>& audio
   if(_outputDirectory.back() != std::string(PATH_SEPARATOR).back()) {
     outputFileName << PATH_SEPARATOR;
   }
-  outputFileName << audioObject->get<adm::AudioObjectName>().get() << ".wav";
+  outputFileName << replaceSpecialCharacters(audioObject->get<adm::AudioObjectName>().get()) << ".wav";
   std::unique_ptr<bw64::Bw64Writer> outputFile =
     bw64::writeFile(outputFileName.str(), _outputLayout.channels().size(), _inputFile->sampleRate(), _inputFile->bitDepth(), chna, axml);
 
