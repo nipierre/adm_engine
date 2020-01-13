@@ -25,15 +25,11 @@ std::string replaceSpecialCharacters(std::string& text) {
   // map some special characters
   std::map<std::string, std::string>::const_iterator it;
   for (it = specCharMap.begin(); it != specCharMap.end(); it++) {
-    size_t position = 0;
-    while((position = text.find(it->first, position)) != std::string::npos) {
-      text.replace(position, it->first.size(), it->second);
-      position += it->second.size();
-    }
+    text = std::regex_replace(text, std::regex(it->first), it->second);
   }
 
   // remove remaining special characters
-  text = std::regex_replace(text, specCharRegex, "");
+  text = std::regex_replace(text, specCharRegex, "_");
   return text;
 }
 
