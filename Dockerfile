@@ -45,7 +45,7 @@ RUN cd adm_engine && \
     make && \
     make install
 
-FROM mediacloudai/c_amqp_worker:v0.3.1
+FROM mediacloudai/c_mcai_worker_sdk:v0.10.2
 
 COPY --from=builder /usr/local/bin/adm-engine /app/adm_engine/bin/adm-engine
 COPY --from=builder /usr/local/lib/ /app/adm_engine/lib/
@@ -59,4 +59,4 @@ ENV LD_LIBRARY_PATH $LD_LIBRARY_PATH:/app/adm_engine/lib
 ENV WORKER_LIBRARY_FILE /app/adm_engine/worker/libadmengineworker.so
 ENV PATH $PATH:/app/adm_engine/bin
 
-CMD c_amqp_worker
+CMD c_mcai_worker_sdk
