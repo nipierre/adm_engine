@@ -12,16 +12,28 @@
 
 using namespace admengine;
 
-void assignStringtoPointer(const std::string& str, char* pointer) {
-  std::copy(str.begin(), str.end(), pointer);
-  pointer[str.size()] = '\0';
+
+void assignStringtoPointer(const std::string& str, const char** pointer) {
+  // get the string size + the ending null char
+  const size_t length = str.size() + 1;
+  // allocate the output pointer
+  *pointer = (const char *)malloc(length);
+  // copy the string to the output pointer
+  std::memcpy((void*)*pointer, str.c_str(), length);
 }
 
-int dumpBw64AdmFile(const std::string& path, char* output_message) {
-  auto bw64File = bw64::readFile(path);
-  const std::string admDocumentStr = getAdmDocumentAsString(getAdmDocument(parseAdmXmlChunk(bw64File)));
-  assignStringtoPointer(admDocumentStr, output_message);
-  std::cout << output_message << std::endl;
+int dumpBw64AdmFile(const std::string& path, const char** output_message) {
+  try {
+    auto bw64File = bw64::readFile(path);
+    const std::string admDocumentStr = getAdmDocumentAsString(getAdmDocument(parseAdmXmlChunk(bw64File)));
+
+    assignStringtoPointer(admDocumentStr, output_message);
+  } catch(const std::exception& e) {
+    std::string error(e.what());
+    std::cerr << "Error: " << error << std::endl;
+    assignStringtoPointer(error, output_message);
+    return 1;
+  }
   return 0;
 }
 
@@ -63,7 +75,7 @@ int renderAdmContent(const char* input,
                      const char* destination,
                      const char* elementGainsCStr,
                      const char* elementIdToRenderCStr,
-                     char* output_message) {
+                     const char** output_message) {
 
   const std::string inputFilePath(input);
   const std::string outputDirectoryPath(destination);
@@ -81,12 +93,13 @@ int renderAdmContent(const char* input,
     elementGains = parseElementGains(elementGainsCStr);
   }
 
-  auto bw64File = bw64::readFile(inputFilePath);
-  const std::string outputLayout("0+2+0"); // TODO: get it from args
-
   try {
+    auto bw64File = bw64::readFile(inputFilePath);
+    const std::string outputLayout("0+2+0"); // TODO: get it from args
+
     Renderer renderer(bw64File, outputLayout, outputDirectoryPath, elementGains, elementIdToRender);
     renderer.process();
+
   } catch(const std::exception& e) {
     std::string error(e.what());
     std::cerr << "Error: " << error << std::endl;
@@ -117,28 +130,28 @@ extern "C" {
  * Get worker name
  */
 char* get_name() {
-	return (char*)"ADM Engine Worker";
+  return (char*)"ADM Engine Worker";
 }
 
 /**
  * Get worker short description
  */
 char* get_short_description() {
-	return (char*)"Processes BW64/ADM audio file rendering.";
+  return (char*)"Processes BW64/ADM audio file rendering.";
 }
 
 /**
  * Get worker long description
  */
 char* get_description() {
-	return (char*)"This worker processes ADM rendering from specified BW64/ADM audio file.";
+  return (char*)"This worker processes ADM rendering from specified BW64/ADM audio file.";
 }
 
 /**
  * Get worker version
  */
 char* get_version() {
-	return (char*)"1.0.0";
+  return (char*)"1.0.0";
 }
 
 /**
@@ -202,39 +215,50 @@ void get_parameters(Parameter* parameters) {
     memcpy(parameters, worker_parameters, sizeof(worker_parameters));
 }
 
-typedef void* JobParameters;
-typedef char* (*GetParameterValueCallback)(JobParameters, const char*);
+typedef void* Handler;
+typedef char* (*GetParameterValueCallback)(Handler, const char*);
+typedef void* (*ProgressCallback)(Handler, unsigned char _progression_percentage);
 typedef void* (*Logger)(const char*);
 typedef int* (*CheckError)();
 
 /**
  * Worker main process function
- * @param job                      Job parameters handler
- * @param parametersValueGetter    Get job parameter value callback
- * @param checkError               Check error callback
- * @param logger                   Rust logger callback
+ * @param handler                  Handler
+ * @param parameters_value_getter  Get job parameter value callback
+ * @param progress_callback        Progress callback
+ * @param logger                   Rust Logger
+ * @param message                  Output message pointer
+ * @param output_paths             Output paths pointer
  */
-int process(JobParameters job, GetParameterValueCallback parametersValueGetter, CheckError checkError, Logger logger, char* output_message) {
+int process(Handler handler,
+            GetParameterValueCallback parameters_value_getter,
+            ProgressCallback progress_callback,
+            Logger logger,
+            const char** output_message,
+            const char*** output_paths) {
     // Print message through the Rust internal logger
     logger("Start C Worker process...");
 
     // Retrieve job parameter value
-    char* inputFilePath = parametersValueGetter(job, "input");
+    char* inputFilePath = parameters_value_getter(handler, "input");
     if(inputFilePath == NULL) {
-    	checkError();
-    	displayUsage();
-    	return 1;
+      displayUsage();
+      return 1;
     }
     logger(inputFilePath);
 
-    char* outputDirectoryPath = parametersValueGetter(job, "output");
-    char* elementGainsStr = parametersValueGetter(job, "gain_mapping");
-    char* elementIdToRender = parametersValueGetter(job, "element_id");
+    char* outputDirectoryPath = parameters_value_getter(handler, "output");
+    char* elementGainsStr = parameters_value_getter(handler, "gain_mapping");
+    char* elementIdToRender = parameters_value_getter(handler, "element_id");
 
     if(outputDirectoryPath == NULL) {
-    	return dumpBw64AdmFile(inputFilePath, output_message);
+      const int ret = dumpBw64AdmFile(inputFilePath, output_message);
+      progress_callback(handler, 100);
+      return ret;
     } else {
-    	return renderAdmContent(inputFilePath, outputDirectoryPath, elementGainsStr, elementIdToRender, output_message);
+      const int ret = renderAdmContent(inputFilePath, outputDirectoryPath, elementGainsStr, elementIdToRender, output_message);
+      progress_callback(handler, 100);
+      return ret;
     }
 }
 
