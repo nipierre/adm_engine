@@ -2,7 +2,7 @@
 # ADM Engine AMQP worker
 
 The purpose of this worker is to integrate the `adm_engine` tool easily into a message broker environment.
-It is based on the [c_amqp_worker](https://github.com/media-cloud-ai/c_amqp_worker) library.
+It is based on the C/C++ binding of the [mcai_worker_sdk](https://github.com/media-cloud-ai/mcai_worker_sdk) library.
 The worker can handle AMQP message under JSON format. Here are some usage examples:
 
  * Dumping BW64/ADM file info:
