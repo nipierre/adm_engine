@@ -45,7 +45,7 @@ RUN cd adm_engine && \
     make && \
     make install
 
-FROM mediacloudai/c_mcai_worker_sdk:v0.10.2
+FROM mediacloudai/c_mcai_worker_sdk:v0.11.7
 
 COPY --from=builder /usr/local/bin/adm-engine /app/adm_engine/bin/adm-engine
 COPY --from=builder /usr/local/lib/ /app/adm_engine/lib/
