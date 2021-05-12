@@ -188,12 +188,19 @@ void Renderer::toFile(const std::unique_ptr<bw64::Bw64Writer>& outputFile) {
 
   // Buffers
   const size_t outputNbChannels = outputFile->channels();
+  const size_t inputBufferLength = BLOCK_SIZE * _inputNbChannels;
+  const size_t outputBufferLength = BLOCK_SIZE * outputNbChannels;
 
   // Read file, render with gains and write output file
-  float inputBuffer[BLOCK_SIZE * _inputNbChannels]; // nb of samples * nb input channels
+  float inputBuffer[inputBufferLength]; // nb of samples * nb input channels
+  memset(inputBuffer, 0.0, inputBufferLength * sizeof(float));
+
   while (!_inputFile->eof()) {
+    // Reset output buffer
+    float outputBuffer[outputBufferLength]; // nb of samples * nb output channels
+    memset(outputBuffer, 0.0, outputBufferLength * sizeof(float));
+
     // Read a data block
-    float outputBuffer[BLOCK_SIZE * outputNbChannels]; // nb of samples * nb output channels
     auto nbFrames = _inputFile->read(inputBuffer, BLOCK_SIZE);
     processBlock(nbFrames, inputBuffer, outputBuffer);
     outputFile->write(outputBuffer, nbFrames);
