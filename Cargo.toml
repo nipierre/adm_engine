@@ -1,0 +1,19 @@
+[package]
+name = "adm_engine"
+version = "0.2.0"
+authors = [
+  "Valentin Noel <valentin.noel@media-io.com>",
+  "Marc-Antoine Arnaud <maarnaud@media-io.com>",
+  "Nicolas Pierre <nico.pierre@icloud.com>",
+]
+edition = "2018"
+
+[dependencies]
+mcai_worker_sdk = { version = "1.0.0-rc2" }
+libc = "0.2.94"
+schemars = "0.8.0"
+serde = "^1.0"
+serde_derive = "^1.0"
+
+[build-dependencies]
+built = "0.4.1"

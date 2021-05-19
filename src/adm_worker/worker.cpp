@@ -215,11 +215,11 @@ void get_parameters(Parameter* parameters) {
     memcpy(parameters, worker_parameters, sizeof(worker_parameters));
 }
 
-typedef void* Handler;
-typedef char* (*GetParameterValueCallback)(Handler, const char*);
-typedef void* (*ProgressCallback)(Handler, unsigned char _progression_percentage);
-typedef void* (*Logger)(const char*);
-typedef int* (*CheckError)();
+// typedef void* Handler;
+// typedef char* (*GetParameterValueCallback)(Handler, const char*);
+// typedef void* (*ProgressCallback)(Handler, unsigned char _progression_percentage);
+// typedef void* (*Logger)(const char*);
+// typedef int* (*CheckError)();
 
 /**
  * Worker main process function
@@ -230,37 +230,37 @@ typedef int* (*CheckError)();
  * @param message                  Output message pointer
  * @param output_paths             Output paths pointer
  */
-int process(Handler handler,
-            GetParameterValueCallback parameters_value_getter,
-            ProgressCallback progress_callback,
-            Logger logger,
-            const char** output_message,
-            const char*** output_paths) {
-    // Print message through the Rust internal logger
-    logger("Start C Worker process...");
-
-    // Retrieve job parameter value
-    char* inputFilePath = parameters_value_getter(handler, "input");
-    if(inputFilePath == NULL) {
-      displayUsage();
-      return 1;
-    }
-    logger(inputFilePath);
-
-    char* outputDirectoryPath = parameters_value_getter(handler, "output");
-    char* elementGainsStr = parameters_value_getter(handler, "gain_mapping");
-    char* elementIdToRender = parameters_value_getter(handler, "element_id");
-
-    if(outputDirectoryPath == NULL) {
-      const int ret = dumpBw64AdmFile(inputFilePath, output_message);
-      progress_callback(handler, 100);
-      return ret;
-    } else {
-      const int ret = renderAdmContent(inputFilePath, outputDirectoryPath, elementGainsStr, elementIdToRender, output_message);
-      progress_callback(handler, 100);
-      return ret;
-    }
-}
+// int process(Handler handler,
+//             GetParameterValueCallback parameters_value_getter,
+//             ProgressCallback progress_callback,
+//             Logger logger,
+//             const char** output_message,
+//             const char*** output_paths) {
+//     // Print message through the Rust internal logger
+//     logger("Start C Worker process...");
+//
+//     // Retrieve job parameter value
+//     char* inputFilePath = parameters_value_getter(handler, "input");
+//     if(inputFilePath == NULL) {
+//       displayUsage();
+//       return 1;
+//     }
+//     logger(inputFilePath);
+//
+//     char* outputDirectoryPath = parameters_value_getter(handler, "output");
+//     char* elementGainsStr = parameters_value_getter(handler, "gain_mapping");
+//     char* elementIdToRender = parameters_value_getter(handler, "element_id");
+//
+//     if(outputDirectoryPath == NULL) {
+//       const int ret = dumpBw64AdmFile(inputFilePath, output_message);
+//       progress_callback(handler, 100);
+//       return ret;
+//     } else {
+//       const int ret = renderAdmContent(inputFilePath, outputDirectoryPath, elementGainsStr, elementIdToRender, output_message);
+//       progress_callback(handler, 100);
+//       return ret;
+//     }
+// }
 
 #ifdef __cplusplus
 }
